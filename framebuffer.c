@@ -5,6 +5,7 @@
         For more details: www.marks-space.com
 
     Copyright (C) 2013  Mark Williams
+    MODIFIED BY LALKS
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -76,7 +77,7 @@ static unsigned short def_b[] =
 
 
 
-void put_pixel_16bpp(int x, int y, int r, int g, int b)
+void put_pixel_16bpp(int x, int y, int color[3])
 {
         unsigned int pix_offset;
         unsigned short c;
@@ -85,24 +86,40 @@ void put_pixel_16bpp(int x, int y, int r, int g, int b)
         pix_offset = x*2 + y * fix.line_length;
 
         //some magic to work out the color
-        c = ((r / 8) << 11) + ((g / 4) << 5) + (b / 8);
+        c = ((color[0] / 8) << 11) + ((color[1] / 4) << 5) + (color[2] / 8);
 
         // write 'two bytes at once'
         *((unsigned short*)(fbp + pix_offset)) = c;
 }
 
-
-void drawSquare(int x, int y,int height, int width,  int c)
+void drawSquare(int x, int y,int height, int width,  int color[3],  int borderSize, int borderColor[3])
 //void drawSquare(int x, int y)
 {
 //	int height = 20;
 //	int width = 20;
-	int h = 0;
-	int w = 0;
-	for ( h = 0; h< height;h++)
-		for ( w = 0; w< width;w++)
-			put_pixel_16bpp( h+(x-2), w+(y-2) , def_r[c],def_g[c],def_b[c]);
-
+	int h, w, a, b = 0;
+	
+	// Top border
+	for (a=0; a<borderSize; a++) // for lines
+		for (b = 0; b<width; b++) // for pixels in the current line
+			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
+	// Left border, rectangle, right border
+	for ( h=borderSize; h<height-borderSize;h++)
+	{
+		// Left border
+		for ( a=0; a<borderSize; a++)
+			put_pixel_16bpp( a+(x-2), h+(y-2), borderColor );
+		// Rectangle
+		for ( w=a; w<width-a;w++)
+			put_pixel_16bpp( w+(x-2), h+(y-2) , color);
+		// Right border
+		for ( b=w; b<w+borderSize; b++ )
+			put_pixel_16bpp( b+(x-2), h+(y-2), borderColor );
+	}
+	// Bottom border
+	for (a=height-borderSize; a<height; a++) // for lines
+		for (b=0; b<width; b++) // for pixels in the current line
+			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
 }
 
 
@@ -155,9 +172,10 @@ int framebufferInitialize(int *xres, int *yres)
 
 	//clear framebuffer
         int x, y;
+	int color[3] = {0,0,0};
         for (x = 0; x<var.xres;x++)
                 for (y = 0; y < var.yres;y++)
-                        put_pixel_16bpp(x,y, 0, 0, 0);
+                        put_pixel_16bpp(x,y, color);
 
 }
 
@@ -165,9 +183,10 @@ void closeFramebuffer()
 {
 
 	int x, y;
+	int color[3] = {0,0,0};
 	for (x = 0; x < var.xres; x++)
 		for (y = 0; y < var.yres;y++)
-			put_pixel_16bpp(x,y, 0, 0, 0);
+			put_pixel_16bpp(x,y, color);
 
 	munmap(fbp, screensize);
 	if (ioctl(fb, FBIOPUT_VSCREENINFO, &orig_var)) {
@@ -176,21 +195,21 @@ void closeFramebuffer()
 	close(fb);
 
 }
-void put_char(int x, int y, int c, int colidx)
+void put_char(int x, int y, int c, int colidx, int color[3])
 {
 	int i,j,bits;
 	for (i = 0; i < font_vga_8x8.height; i++) {
 	bits = font_vga_8x8.data [font_vga_8x8.height * c + i];
 		for (j = 0; j < font_vga_8x8.width; j++, bits <<= 1)
 			if (bits & 0x80){
-				put_pixel_16bpp(x+j,  y+i, 255,255,255);
+				put_pixel_16bpp(x+j,  y+i, color);
 			}
 		}
 }
 
-void put_string(int x, int y, char *s, unsigned colidx)
+void put_string(int x, int y, char *s, unsigned colidx, int color[3])
 {
 	int i;
 	for (i = 0; *s; i++, x += font_vga_8x8.width, s++)
-	put_char (x, y, *s, colidx);
+	put_char (x, y, *s, colidx, color);
 }
