@@ -5,6 +5,7 @@
         For more details: ozzmaker.com
 
     Copyright (C) 2013  Mark Williams
+	MODIFIED BY LALKS
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -90,6 +91,7 @@ void getTouchSample(int *rawX, int *rawY, int *rawPressure)
 
 	rb=read(fd,ev,sizeof(struct input_event)*64);
         for (i = 0;  i <  (rb / sizeof(struct input_event)); i++){
+				/*
               if (ev[i].type ==  EV_SYN)
                          printf("Event type is %s%s%s = Start of New Event\n",KYEL,events[ev[i].type],KWHT);
 
@@ -98,17 +100,17 @@ void getTouchSample(int *rawX, int *rawY, int *rawPressure)
 
                 else if (ev[i].type == EV_KEY && ev[i].code == 330 && ev[i].value == 0)
 			printf("Event type is %s%s%s & Event code is %sTOUCH(330)%s & Event value is %s0%s = Touch Finished\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,KWHT);
-
-                else if (ev[i].type == EV_ABS && ev[i].code == 0 && ev[i].value > 0){
-                        printf("Event type is %s%s%s & Event code is %sX(0)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
+*/
+                if (ev[i].type == EV_ABS && ev[i].code == 0 && ev[i].value > 0){
+                        //printf("Event type is %s%s%s & Event code is %sX(0)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
 			*rawX = ev[i].value;
 		}
                 else if (ev[i].type == EV_ABS  && ev[i].code == 1 && ev[i].value > 0){
-                        printf("Event type is %s%s%s & Event code is %sY(1)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
+                        //printf("Event type is %s%s%s & Event code is %sY(1)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
 			*rawY = ev[i].value;
 		}
                 else if (ev[i].type == EV_ABS  && ev[i].code == 24 && ev[i].value > 0){
-                        printf("Event type is %s%s%s & Event code is %sPressure(24)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
+                        //printf("Event type is %s%s%s & Event code is %sPressure(24)%s & Event value is %s%d%s\n", KYEL,events[ev[i].type],KWHT,KYEL,KWHT,KYEL,ev[i].value,KWHT);
 			*rawPressure = ev[i].value;
 		}
 

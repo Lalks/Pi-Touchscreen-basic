@@ -23,6 +23,7 @@
     MA 02111-1307, USA
 */
 #include <stdlib.h>
+#include <stdint.h>
 #include <linux/fb.h>
 #include <sys/mman.h>
 #include "font_8x8.c"
@@ -46,38 +47,17 @@
 
 
 
-// default framebuffer palette
-typedef enum {
-  BLACK        =  0, /*   0,   0,   0 */
-  BLUE         =  1, /*   0,   0, 172 */
-  GREEN        =  2, /*   0, 172,   0 */
-  CYAN         =  3, /*   0, 172, 172 */
-  RED          =  4, /* 172,   0,   0 */
-  PURPLE       =  5, /* 172,   0, 172 */
-  ORANGE       =  6, /* 172,  84,   0 */
-  LTGREY       =  7, /* 172, 172, 172 */
-  GREY         =  8, /*  84,  84,  84 */
-  LIGHT_BLUE   =  9, /*  84,  84, 255 */
-  LIGHT_GREEN  = 10, /*  84, 255,  84 */
-  LIGHT_CYAN   = 11, /*  84, 255, 255 */
-  LIGHT_RED    = 12, /* 255,  84,  84 */
-  LIGHT_PURPLE = 13, /* 255,  84, 255 */
-  YELLOW       = 14, /* 255, 255,  84 */
-  WHITE        = 15  /* 255, 255, 255 */
-} COLOR_INDEX_T;
-static unsigned short def_r[] =
-    { 0,   0,   0,   0, 172, 172, 172, 168,
-     84,  84,  84,  84, 255, 255, 255, 255};
-static unsigned short def_g[] =
-    { 0,   0, 168, 168,   0,   0,  84, 168,
-     84,  84, 255, 255,  84,  84, 255, 255};
-static unsigned short def_b[] =
-    { 0, 172,   0, 168,   0, 172,   0, 168,
-     84, 255,  84, 255,  84, 255,  84, 255};
+struct Button
+{
+	// Considering the button rectangle !
+	// width  = BottomRightCorner[0] - TopLeftCorner[0]
+	// height = BottomRightCorner[1] - TopLeftCorner[1]
+	int TopLeftCorner[2]; // {x, y}
+	int BottomRightCorner[2]; // {x, y}
+};
 
 
-
-void put_pixel_16bpp(int x, int y, int color[3])
+void put_pixel_16bpp(int x, int y, uint8_t color[3])
 {
         unsigned int pix_offset;
         unsigned short c;
@@ -92,7 +72,7 @@ void put_pixel_16bpp(int x, int y, int color[3])
         *((unsigned short*)(fbp + pix_offset)) = c;
 }
 
-void drawSquare(int x, int y,int height, int width,  int color[3],  int borderSize, int borderColor[3])
+void drawSquare(int x, int y,int height, int width,  uint8_t color[3],  int borderSize, uint8_t borderColor[3])
 //void drawSquare(int x, int y)
 {
 //	int height = 20;
@@ -121,6 +101,44 @@ void drawSquare(int x, int y,int height, int width,  int color[3],  int borderSi
 		for (b=0; b<width; b++) // for pixels in the current line
 			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
 }
+
+struct Button drawButton(int x, int y,int height, int width,  uint8_t color[3],  int borderSize, uint8_t borderColor[3])
+{
+	int h, w, a, b = 0;
+
+	struct Button button1;
+
+	button1.TopLeftCorner[0] = x;
+	button1.TopLeftCorner[1] = y;
+	button1.BottomRightCorner[0] = x+width;
+	button1.BottomRightCorner[1] = y+height;
+
+
+	// Top border
+	for (a=0; a<borderSize; a++) // for lines
+		for (b = 0; b<width; b++) // for pixels in the current line
+			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
+	// Left border, rectangle, right border
+	for ( h=borderSize; h<height-borderSize;h++)
+	{
+		// Left border
+		for ( a=0; a<borderSize; a++)
+			put_pixel_16bpp( a+(x-2), h+(y-2), borderColor );
+		// Rectangle
+		for ( w=a; w<width-a;w++)
+			put_pixel_16bpp( w+(x-2), h+(y-2) , color);
+		// Right border
+		for ( b=w; b<w+borderSize; b++ )
+			put_pixel_16bpp( b+(x-2), h+(y-2), borderColor );
+	}
+	// Bottom border
+	for (a=height-borderSize; a<height; a++) // for lines
+		for (b=0; b<width; b++) // for pixels in the current line
+			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
+
+	return(button1);
+}
+
 
 
 int framebufferInitialize(int *xres, int *yres)
@@ -195,7 +213,7 @@ void closeFramebuffer()
 	close(fb);
 
 }
-void put_char(int x, int y, int c, int colidx, int color[3])
+void put_char(int x, int y, int c, int colidx, uint8_t color[3])
 {
 	int i,j,bits;
 	for (i = 0; i < font_vga_8x8.height; i++) {
@@ -207,7 +225,7 @@ void put_char(int x, int y, int c, int colidx, int color[3])
 		}
 }
 
-void put_string(int x, int y, char *s, unsigned colidx, int color[3])
+void put_string(int x, int y, char *s, unsigned colidx, uint8_t color[3])
 {
 	int i;
 	for (i = 0; *s; i++, x += font_vga_8x8.width, s++)
