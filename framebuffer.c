@@ -50,10 +50,11 @@
 struct Button
 {
 	// Considering the button rectangle !
-	// width  = BottomRightCorner[0] - TopLeftCorner[0]
-	// height = BottomRightCorner[1] - TopLeftCorner[1]
+	int width; // = BottomRightCorner[0] - TopLeftCorner[0]
+	int height; // = BottomRightCorner[1] - TopLeftCorner[1]
 	int TopLeftCorner[2]; // {x, y}
 	int BottomRightCorner[2]; // {x, y}
+	char Text[20]; // The string inside the button
 };
 
 
@@ -102,16 +103,32 @@ void drawSquare(int x, int y,int height, int width,  uint8_t color[3],  int bord
 			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
 }
 
-struct Button drawButton(int x, int y,int height, int width,  uint8_t color[3],  int borderSize, uint8_t borderColor[3])
+struct Button drawButton(int x, int y,int height, int width,  uint8_t color[3], const char *String,  int borderSize, uint8_t borderColor[3])
 {
 	int h, w, a, b = 0;
 
 	struct Button button1;
 
+	// Preparation
+	// I want a text string in the center of the button
+	// reminder : one character is 8 pixels width, and 8 pixels height
+	int StringLength = strlen(String);
+
+	int StringPixelWidth = StringLength*8;
+	int StringMarginLeft = 0;
+
+	StringMarginLeft = (width-StringPixelWidth)/2;
+	printf("Printed from framebuffer.c ----\nText = %s\n", String, StringLength, width, StringPixelWidth, StringMarginLeft);
+
+
+	button1.width = width;
+	button1.height = height;
 	button1.TopLeftCorner[0] = x;
 	button1.TopLeftCorner[1] = y;
 	button1.BottomRightCorner[0] = x+width;
 	button1.BottomRightCorner[1] = y+height;
+	strcpy(button1.Text, String);
+	
 
 
 	// Top border
@@ -135,11 +152,13 @@ struct Button drawButton(int x, int y,int height, int width,  uint8_t color[3], 
 	for (a=height-borderSize; a<height; a++) // for lines
 		for (b=0; b<width; b++) // for pixels in the current line
 			put_pixel_16bpp(b+(x-2), a+(y-2), borderColor);
+	
+	int rrr = x+StringMarginLeft;
+	//put_string(screenXmin+x+StringMarginLeftForCenter, screenYmin+y+height/2-6, String, 25, borderColor);
+	put_string(rrr, y+height/2-6, String, 2, borderColor);
 
 	return(button1);
 }
-
-
 
 int framebufferInitialize(int *xres, int *yres)
 {
@@ -181,27 +200,25 @@ int framebufferInitialize(int *xres, int *yres)
                     PROT_READ | PROT_WRITE, 
                     MAP_SHARED, 
                     fb, 0);
-	if ((int)fbp == -1) {
-	printf("Failed to mmap.\n");
-	}
+	if ((int)fbp == -1)
+		printf("Failed to mmap.\n");
 
 	*xres = var.xres;
 	*yres = var.yres;
 
 	//clear framebuffer
-        int x, y;
-	int color[3] = {0,0,0};
-        for (x = 0; x<var.xres;x++)
-                for (y = 0; y < var.yres;y++)
-                        put_pixel_16bpp(x,y, color);
-
+	int x, y;
+	uint8_t color[3] = {0,0,0};
+	for (x = 0; x<var.xres;x++)
+		for (y = 0; y < var.yres;y++)
+			put_pixel_16bpp(x,y, color);
 }
 
 void closeFramebuffer()
 {
 
 	int x, y;
-	int color[3] = {0,0,0};
+	uint8_t color[3] = {20,140,20};
 	for (x = 0; x < var.xres; x++)
 		for (y = 0; y < var.yres;y++)
 			put_pixel_16bpp(x,y, color);
@@ -213,21 +230,21 @@ void closeFramebuffer()
 	close(fb);
 
 }
+
 void put_char(int x, int y, int c, int colidx, uint8_t color[3])
 {
 	int i,j,bits;
 	for (i = 0; i < font_vga_8x8.height; i++) {
-	bits = font_vga_8x8.data [font_vga_8x8.height * c + i];
+		bits = font_vga_8x8.data [font_vga_8x8.height * c + i];
 		for (j = 0; j < font_vga_8x8.width; j++, bits <<= 1)
-			if (bits & 0x80){
+			if (bits & 0x80)
 				put_pixel_16bpp(x+j,  y+i, color);
-			}
-		}
+	}
 }
 
 void put_string(int x, int y, char *s, unsigned colidx, uint8_t color[3])
 {
 	int i;
 	for (i = 0; *s; i++, x += font_vga_8x8.width, s++)
-	put_char (x, y, *s, colidx, color);
+		put_char (x, y, *s, colidx, color);
 }

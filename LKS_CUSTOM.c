@@ -26,9 +26,9 @@ FT_Library ftlib;
 
 void  INThandler(int sig)
 {
-        signal(sig, SIG_IGN);
+	signal(sig, SIG_IGN);
 	closeFramebuffer();
-        exit(0);
+	exit(0);
 }
 
 int main()
@@ -68,31 +68,35 @@ int main()
 	scaleXvalue = ((float)screenXmax-screenXmin) / xres;
 	printf ("X Scale Factor = %f\n", scaleXvalue);
 	scaleYvalue = ((float)screenYmax-screenYmin) / yres;
-	printf ("Y Scale Factor = %f\n", scaleYvalue);
+	printf ("Y Scale Factor = %f\n\n\n", scaleYvalue);
 
 
 	// BEGGINING OF CUSTOMIZATION :::LALKS:::
 	
+	// Clear the display
+	uint8_t ClearColor[3] = {0,0,0};
+	for(int Y=screenYmin; Y<screenYmin+yres; Y++)
+		for(int X=screenXmin; X<screenXmin+xres;X++)
+			put_pixel_16bpp(X,Y, ClearColor);
 
-	uint8_t color[3] = {40,40,40}; 
+
+	uint8_t color[3] = {40,40,40};
+	uint8_t color2[3] = {140,140,140};
 	uint8_t borderColor[3] = {0,187,255};
-	short margin = 200;
+	uint8_t borderColor2[3] = {255,255,255};
+	short margin = 180;
+	unsigned short buttonheight = 30;
+	struct Button button1, button2;
 
-	struct Button button1;
-	// 
-	button1 = drawButton(screenXmin+margin, screenYmin+margin, 30, xres-margin*2, color,  2, borderColor);
-	
-	// I want a text string in the center of the button
-	// reminder : one character is 8 pixels width, and 8 pixels height
-	char String[] = "Touch me, a surprise will come !";
-	int StringLenght = sizeof(String);
+	RESET:
+	button1 = drawButton(screenXmin+margin, screenYmin+100, buttonheight, xres-margin*2, color, "abcdefghi", 3, borderColor);
 
-	put_string(screenXmin+20, screenYmin+20, String, 25,  borderColor);
-	
+	button2 = drawButton(screenXmin+margin, screenYmin+200, buttonheight, xres-margin*2, color, "01234", 3, borderColor);
+
 	while(1)
 	{
 		getTouchSample(&rawX, &rawY, &rawPressure);
-		
+
 		scaledY = rawX/scaleYvalue;
 		scaledX = xres-(rawY/scaleXvalue);
 
@@ -101,16 +105,19 @@ int main()
 		printf("button1.TopLeftCorner[1] = %d\nbutton1.BottomRightCorner[1] = %d", button1.TopLeftCorner[1], button1.BottomRightCorner[1]);
 
 		printf("\n----------------------------------\n");
-		
-		uint8_t A[3] = {255,255,255}; 
-		drawSquare(scaledX, scaledY, 3,3, A, 1 ,A);
 
-		if( button1.TopLeftCorner[1] < scaledY < button1.BottomRightCorner[1]) 
-				if(button1.TopLeftCorner[0] < scaledX < button1.BottomRightCorner[0] )
-						printf("OK\n");
+		if( button1.TopLeftCorner[1] < scaledY)
+			if(scaledY < button1.BottomRightCorner[1]) 
+				if(button1.TopLeftCorner[0] < scaledX)
+					if(scaledX < button1.BottomRightCorner[0] )
+						button1 = drawButton(screenXmin+margin, screenYmin+100, buttonheight, xres-margin*2, color2, "TOUCHED", 3, borderColor2);
 
-
-	}
-}
+		if( button2.TopLeftCorner[1] < scaledY)
+			if(scaledY < button2.BottomRightCorner[1])
+				if(button2.TopLeftCorner[0] < scaledX)
+					if(scaledX < button2.BottomRightCorner[0] )
+						goto RESET;
+	} // End of while(1)
+} // End of main()
 
 
